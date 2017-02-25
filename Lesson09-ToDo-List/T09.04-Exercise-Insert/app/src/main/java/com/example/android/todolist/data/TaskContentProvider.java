@@ -21,6 +21,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 
@@ -37,9 +38,10 @@ public class TaskContentProvider extends ContentProvider {
     private static final UriMatcher sUriMatcher = buildUriMatcher();
 
     // Define a static buildUriMatcher method that associates URI's with their int match
+
     /**
-     Initialize a new matcher object without any matches,
-     then use .addURI(String authority, String path, int match) to add matches
+     * Initialize a new matcher object without any matches,
+     * then use .addURI(String authority, String path, int match) to add matches
      */
     public static UriMatcher buildUriMatcher() {
 
@@ -78,16 +80,39 @@ public class TaskContentProvider extends ContentProvider {
 
     @Override
     public Uri insert(@NonNull Uri uri, ContentValues values) {
-        // TODO (1) Get access to the task database (to write new data to)
+        // COMPLETED (1) Get access to the task database (to write new data to)
+        SQLiteDatabase database = mTaskDbHelper.getWritableDatabase();
 
-        // TODO (2) Write URI matching code to identify the match for the tasks directory
+        // COMPLETED (2) Write URI matching code to identify the match for the tasks directory
+        int match = sUriMatcher.match(uri);
+        Uri returnedUri = null;
+        long insertId;
+        switch (match) {
+            case TASKS:
+                // COMPLETED (3) Insert new values into the database
+                insertId = database.insert(TaskContract.TaskEntry.TABLE_NAME, null, values);
+                // COMPLETED (4) Set the value for the returnedUri and write the default case for unknown URI's
+                if (insertId > 0) {
+                    returnedUri = TaskContract.TaskEntry
+                            .CONTENT_URI
+                            .buildUpon()
+                            .appendPath(String.valueOf(insertId))
+                            .build();
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Invalid uri " + uri.toString());
+        }
 
-        // TODO (3) Insert new values into the database
-        // TODO (4) Set the value for the returnedUri and write the default case for unknown URI's
 
-        // TODO (5) Notify the resolver if the uri has been changed, and return the newly inserted URI
+        // COMPLETED (5) Notify the resolver if the uri has been changed, and return the newly inserted URI
+        if (insertId > 0) {
+            getContext()
+                    .getContentResolver()
+                    .notifyChange(uri, null);
+        }
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        return returnedUri;
     }
 
 
